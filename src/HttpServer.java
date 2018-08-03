@@ -22,7 +22,11 @@ class HttpServerSession extends Thread
             System.out.println("Connection received from: " + client.getRemoteSocketAddress());
             while(client.isConnected()) {
                 String line = reader.readLine();
-                System.out.println(line);
+//                System.out.println(line);
+                String parts[] = line.split(" ");
+                if(parts.length == 3) {
+                    System.out.println("First Line: " + parts[1].substring(1));
+                }
             }
         } catch (Exception e) {
             System.err.println("Exception: " + e);
