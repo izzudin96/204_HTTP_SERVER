@@ -1,6 +1,5 @@
 import java.net.*;
 import java.io.*;
-import java.nio.Buffer;
 import java.util.*;
 
 class HttpServer
@@ -22,7 +21,7 @@ class HttpServer
             while(true) {
                 Socket client = server.accept();
                 System.out.println("\nConnection received from: " + client.getLocalAddress());
-                HttpServerSession thread = new HttpServerSession(this, client);
+                HttpServerSession thread = new HttpServerSession(client);
                 synchronized (sessions) {
                     sessions.add(thread);
                 }
@@ -32,101 +31,106 @@ class HttpServer
             System.err.println("Exception: " + e);
         }
     }
-
-//    public void logout(HttpServerSession session)
-//    {
-//        int i, len;
-//        synchronized(sessions) {
-//            len = sessions.size();
-//            for(i=0; i<len; i++) {
-//                HttpServerSession s = sessions.get(i);
-//                if(s == session) {
-//                    sessions.remove(i);
-//                    break;
-//                }
-//            }
-//        }
-//    }
 }
 
 class HttpServerSession extends Thread
 {
-    private HttpServer server;
     private Socket client;
-    private PrintWriter writer;
     private String filename;
+    private String requestType;
+    static final File WEB_ROOT = new File("D:\\Waikato\\204\\204_HTTP_SERVER\\src");
 
-    public HttpServerSession(HttpServer a, Socket b) {
-        server = a;
-        client = b;
-        writer = null;
+    public HttpServerSession(Socket client) {
+        this.client = client;
     }
 
     public void run() {
         try {
-            writer = new PrintWriter(client.getOutputStream(), true);
+            //The reader is used to read client's GET request.
             BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream()));
+            //The writer is used to write HTTP headers
+            PrintWriter writer = new PrintWriter(client.getOutputStream());
+            //The data is binary output to client
+            BufferedOutputStream data = new BufferedOutputStream(client.getOutputStream());
+
             if(client.isConnected()) {
-                String request = reader.readLine();
-                System.out.println("\n" + request);
-                String parts[] = request.split(" ");
-                if(parts.length != 3) {
-                    throw new Exception("\nDoes not understand request");
-                } else {
-                    filename = parts[1].substring(1);
-                    System.out.println("\nRequested file is: " + filename);
+                String requestedFileName = parseRequestFileName(reader.readLine());
+
+                if(requestedFileName.endsWith("/")) {
+                    requestedFileName = "index.html";
                 }
+
+                File file = new File(WEB_ROOT, requestedFileName);
+                int fileLength = (int) file.length();
+                String contentType = parseContentType(requestedFileName);
+
+                byte[] fileData = readFileData(file, fileLength);
+
+                writer.println("HTTP/1.1 200 OK");
+                writer.println("Server: Java HTTP Server from SSaurel : 1.0");
+                writer.println("Date: " + new Date());
+                writer.println("Content-type: " + contentType);
+                writer.println("Content-length: " + fileLength);
+                writer.println(); // blank line between headers and content, very important !
+                writer.flush();
+
+                data.write(fileData, 0, fileLength);
+                data.flush();
             }
 
-            BufferedOutputStream bos = new BufferedOutputStream(client.getOutputStream());
-            writer.println("Hello worldss");
 
-//            println(bos, "Hello world");
-
-            System.out.println("\nClose connection with client... \n\n");
-            client.close();
-
-            System.out.println("Ignore following");
-
-
-
-
-            BufferedOutputStream output = new BufferedOutputStream(client.getOutputStream());
-            DataOutputStream dataOutput = new DataOutputStream(client.getOutputStream());
-
-
-            while(client.isConnected()) {
-                String line = reader.readLine();
-                String parts[] = line.split(" ");
-                if(parts.length == 3) {
-                    System.out.println("First Line: " + parts[1].substring(1));
-
-                    println(output, "HTTP/1.1 200 OK");
-                    println(output, "Content-Type: text/html");
-                    println(output, "\r\n");
-                    println(output, "<p> Hello world </p>");
-
-//                    writer.println("HTTP/1.1 200 OK");
-//                    writer.println("Content-Type: text/html");
-//                    writer.println("\r\n");
-//                    writer.println("<p> Hello world </p>");
-//                    writer.flush();
-
-//                    dataOutput.writeBytes("HTTP/1.1 200 OK");
-//                    dataOutput.writeBytes("Content-Type: text/html");
-//                    dataOutput.writeBytes("\r\n");
-//                    dataOutput.writeBytes("<p> Hello world mello tello sellpo</p>");
-//
-//                    dataOutput.close();
-
-//                    out.close();
-                }
+            if(1>2) {
+                System.out.println("\nClose connection with client... \n\n");
+                client.close();
             }
         } catch (Exception e) {
             System.err.println("Exception: " + e);
         }
+    }
 
-        server.logout(this);
+    public String parseRequestFileName(String request) {
+        String parts[] = request.split(" ");
+        if(parts.length != 3) {
+            throw new RuntimeException("Does not understand request");
+        } else {
+            filename = parts[1].substring(1);
+            System.out.println("\nRequested file is: " + filename);
+            return filename;
+        }
+    }
+
+    public String parseRequestType(String request) {
+        String parts[] = request.split(" ");
+        if(parts.length != 3) {
+            throw new RuntimeException("Does not understand request");
+        } else {
+            requestType = parts[0];
+            System.out.println("\nRequest Type is: " + requestType);
+            return requestType;
+        }
+    }
+
+    public String parseContentType(String requestedFile) {
+        if(requestedFile.endsWith(".htm") || requestedFile.endsWith(".html")) {
+            return "text/html";
+        } else {
+            return "text/plain";
+        }
+    }
+
+    private byte[] readFileData(File file, int fileLength) throws IOException {
+        FileInputStream fileIn = null;
+        byte[] fileData = new byte[fileLength];
+
+        try {
+            fileIn = new FileInputStream(file);
+            fileIn.read(fileData);
+        } finally {
+            if (fileIn != null)
+                fileIn.close();
+        }
+
+        return fileData;
     }
 
     private void println(BufferedOutputStream bos, String s) throws IOException {
