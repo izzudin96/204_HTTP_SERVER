@@ -9,6 +9,7 @@ class HttpServer
     public static void main(String args[]) {
         HttpServer server = new HttpServer();
         System.out.println("Server is starting...");
+        System.out.println("Server files path:  = " + System.getProperty("user.dir"));
         server.start_server();
     }
 
@@ -38,7 +39,8 @@ class HttpServerSession extends Thread
     private Socket client;
     private String filename;
     private String requestType;
-    static final File WEB_ROOT = new File("D:\\Waikato\\204\\204_HTTP_SERVER\\src");
+    static final File WEB_ROOT = new File(".");
+    static final String FILE_NOT_FOUND = "404.html";
 
     public HttpServerSession(Socket client) {
         this.client = client;
@@ -56,26 +58,47 @@ class HttpServerSession extends Thread
             if(client.isConnected()) {
                 String requestedFileName = parseRequestFileName(reader.readLine());
 
-                if(requestedFileName.endsWith("/")) {
+                System.out.println("File Name:" + requestedFileName);
+
+                if(requestedFileName.equals("")) {
                     requestedFileName = "index.html";
                 }
 
-                File file = new File(WEB_ROOT, requestedFileName);
-                int fileLength = (int) file.length();
-                String contentType = parseContentType(requestedFileName);
+                try {
+                    File file = new File(WEB_ROOT, requestedFileName);
+                    System.out.println("File:" + file);
+                    int fileLength = (int) file.length();
+                    String contentType = parseContentType(requestedFileName);
 
-                byte[] fileData = readFileData(file, fileLength);
+                    byte[] fileData = readFileData(file, fileLength);
 
-                writer.println("HTTP/1.1 200 OK");
-                writer.println("Server: Java HTTP Server from SSaurel : 1.0");
-                writer.println("Date: " + new Date());
-                writer.println("Content-type: " + contentType);
-                writer.println("Content-length: " + fileLength);
-                writer.println(); // blank line between headers and content, very important !
-                writer.flush();
+                    writer.println("HTTP/1.1 200 OK");
+                    writer.println("Server: Java HTTP Server from SSaurel : 1.0");
+                    writer.println("Date: " + new Date());
+                    writer.println("Content-type: " + contentType);
+                    writer.println("Content-length: " + fileLength);
+                    writer.println();
+                    writer.flush();
 
-                data.write(fileData, 0, fileLength);
-                data.flush();
+                    data.write(fileData, 0, fileLength);
+                    data.flush();
+                } catch (FileNotFoundException e) {
+                    File file = new File(WEB_ROOT, FILE_NOT_FOUND);
+                    int fileLength = (int) file.length();
+                    String content = "text/html";
+                    byte[] fileData = readFileData(file, fileLength);
+
+                    writer.println("HTTP/1.1 404 File Not Found");
+                    writer.println("Server: Java HTTP Server from SSaurel : 1.0");
+                    writer.println("Date: " + new Date());
+                    writer.println("Content-type: " + content);
+                    writer.println("Content-length: " + fileLength);
+                    writer.println(); // blank line between headers and content, very important !
+                    writer.flush(); // flush character output stream buffer
+
+                    data.write(fileData, 0, fileLength);
+                    data.flush();
+                }
             }
 
 
