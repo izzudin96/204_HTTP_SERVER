@@ -36,6 +36,7 @@ class HttpServer
 
 class HttpServerSession extends Thread
 {
+    private String requestedFileName;
     private Socket client;
     private String filename;
     private String requestType;
@@ -56,9 +57,8 @@ class HttpServerSession extends Thread
             BufferedOutputStream data = new BufferedOutputStream(client.getOutputStream());
 
             if(client.isConnected()) {
-                String requestedFileName = parseRequestFileName(reader.readLine());
-
-                System.out.println("File Name:" + requestedFileName);
+                requestedFileName = parseRequestFileName(reader.readLine());
+                print("File Name:" + requestedFileName);
 
                 if(requestedFileName.equals("")) {
                     requestedFileName = "index.html";
@@ -163,5 +163,9 @@ class HttpServerSession extends Thread
             bos.write(array[i]);
         }
         return;
+    }
+
+    private void print(String text) {
+        System.out.println(text);
     }
 }
