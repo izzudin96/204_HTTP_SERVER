@@ -140,8 +140,8 @@ class HttpServerSession extends Thread
                 try {
                     sleep(1);
                     print("Sleeping");
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                } catch (InterruptedException ie) {
+                    ie.printStackTrace();
                 }
                 data.write(fileData[i]);
             }
