@@ -90,7 +90,16 @@ class HttpServerSession extends Thread
             writer.println();
             writer.flush();
 
-            data.write(fileData, 0, fileLength);
+            while(true) {
+                try {
+                    sleep(6000);
+                    print("Sleeping");
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                data.write(fileData, 0, fileLength);
+                break;
+            }
             data.flush();
         }
 
@@ -124,17 +133,6 @@ class HttpServerSession extends Thread
         }
     }
 
-    public String parseRequestType(String request) {
-        String parts[] = request.split(" ");
-        if(parts.length != 3) {
-            throw new RuntimeException("Does not understand request");
-        } else {
-            requestType = parts[0];
-            System.out.println("\nRequest Type is: " + requestType);
-            return requestType;
-        }
-    }
-
     public String parseContentType(String requestedFile) {
         if(requestedFile.endsWith(".htm") || requestedFile.endsWith(".html")) {
             return "text/html";
@@ -146,15 +144,6 @@ class HttpServerSession extends Thread
     private byte[] readFileData(File file, int fileLength) throws IOException {
         FileInputStream fileIn = null;
         byte[] fileData = new byte[fileLength];
-
-        // Simulate slow connection for
-        // assignment purposes only.
-        // Todo: Remove necessarily.
-        try {
-            sleep(6000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
 
         try {
             fileIn = new FileInputStream(file);
