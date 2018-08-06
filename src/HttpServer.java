@@ -71,7 +71,6 @@ class HttpServerSession extends Thread
     }
 
     public void handleUserRequestedFile(String requestedFileName, PrintWriter writer, BufferedOutputStream data) throws IOException {
-        //If user doesn't specify file name, return index.html.
         if(requestedFileName.equals("")) {
             requestedFileName = DEFAULT_FILE;
         }
@@ -147,6 +146,15 @@ class HttpServerSession extends Thread
     private byte[] readFileData(File file, int fileLength) throws IOException {
         FileInputStream fileIn = null;
         byte[] fileData = new byte[fileLength];
+
+        // Simulate slow connection for
+        // assignment purposes only.
+        // Todo: Remove necessarily.
+        try {
+            sleep(6000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
         try {
             fileIn = new FileInputStream(file);
