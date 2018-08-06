@@ -36,12 +36,14 @@ class HttpServer
 
 class HttpServerSession extends Thread
 {
-    private String requestedFileName;
     private Socket client;
     private String filename;
     private String requestType;
-    static final File WEB_ROOT = new File(".");
+    private String requestedFileName;
+
+    static final String DEFAULT_FILE = "index.html";
     static final String FILE_NOT_FOUND = "404.html";
+    static final File WEB_ROOT = new File(".");
 
     public HttpServerSession(Socket client) {
         this.client = client;
@@ -58,56 +60,57 @@ class HttpServerSession extends Thread
 
             if(client.isConnected()) {
                 requestedFileName = parseRequestFileName(reader.readLine());
-                print("File Name:" + requestedFileName);
-
-                if(requestedFileName.equals("")) {
-                    requestedFileName = "index.html";
-                }
-
-                try {
-                    File file = new File(WEB_ROOT, requestedFileName);
-                    System.out.println("File:" + file);
-                    int fileLength = (int) file.length();
-                    String contentType = parseContentType(requestedFileName);
-
-                    byte[] fileData = readFileData(file, fileLength);
-
-                    writer.println("HTTP/1.1 200 OK");
-                    writer.println("Server: Java HTTP Server from SSaurel : 1.0");
-                    writer.println("Date: " + new Date());
-                    writer.println("Content-type: " + contentType);
-                    writer.println("Content-length: " + fileLength);
-                    writer.println();
-                    writer.flush();
-
-                    data.write(fileData, 0, fileLength);
-                    data.flush();
-                } catch (FileNotFoundException e) {
-                    File file = new File(WEB_ROOT, FILE_NOT_FOUND);
-                    int fileLength = (int) file.length();
-                    String content = "text/html";
-                    byte[] fileData = readFileData(file, fileLength);
-
-                    writer.println("HTTP/1.1 404 File Not Found");
-                    writer.println("Server: Java HTTP Server from SSaurel : 1.0");
-                    writer.println("Date: " + new Date());
-                    writer.println("Content-type: " + content);
-                    writer.println("Content-length: " + fileLength);
-                    writer.println(); // blank line between headers and content, very important !
-                    writer.flush(); // flush character output stream buffer
-
-                    data.write(fileData, 0, fileLength);
-                    data.flush();
-                }
+                handleUserRequestedFile(requestedFileName, writer, data);
             }
 
-
-            if(1>2) {
-                System.out.println("\nClose connection with client... \n\n");
-                client.close();
-            }
+            System.out.println("\nClose connection with client...");
+            client.close();
         } catch (Exception e) {
             System.err.println("Exception: " + e);
+        }
+    }
+
+    public void handleUserRequestedFile(String requestedFileName, PrintWriter writer, BufferedOutputStream data) throws IOException {
+        //If user doesn't specify file name, return index.html.
+        if(requestedFileName.equals("")) {
+            requestedFileName = DEFAULT_FILE;
+        }
+
+        try {
+            File file = new File(WEB_ROOT, requestedFileName);
+            int fileLength = (int) file.length();
+            String contentType = parseContentType(requestedFileName);
+
+            byte[] fileData = readFileData(file, fileLength);
+
+            writer.println("HTTP/1.1 200 OK");
+            writer.println("Server: COMPX202 HTTP Server by Izzudin Anuar");
+            writer.println("Date: " + new Date());
+            writer.println("Content-type: " + contentType);
+            writer.println("Content-length: " + fileLength);
+            writer.println();
+            writer.flush();
+
+            data.write(fileData, 0, fileLength);
+            data.flush();
+        }
+
+        catch (FileNotFoundException e) {
+            File file = new File(WEB_ROOT, FILE_NOT_FOUND);
+            int fileLength = (int) file.length();
+            String content = "text/html";
+            byte[] fileData = readFileData(file, fileLength);
+
+            writer.println("HTTP/1.1 404 File Not Found");
+            writer.println("Server: COMPX202 HTTP Server by Izzudin Anuar");
+            writer.println("Date: " + new Date());
+            writer.println("Content-type: " + content);
+            writer.println("Content-length: " + fileLength);
+            writer.println();
+            writer.flush();
+
+            data.write(fileData, 0, fileLength);
+            data.flush();
         }
     }
 
@@ -117,7 +120,7 @@ class HttpServerSession extends Thread
             throw new RuntimeException("Does not understand request");
         } else {
             filename = parts[1].substring(1);
-            System.out.println("\nRequested file is: " + filename);
+            print("\nRequested file is: " + filename);
             return filename;
         }
     }
