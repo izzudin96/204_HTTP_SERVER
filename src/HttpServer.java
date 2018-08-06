@@ -6,6 +6,10 @@ class HttpServer
 {
     private ArrayList<HttpServerSession> sessions;
 
+    /**
+     * Where program starts.
+     * @param args
+     */
     public static void main(String args[]) {
         HttpServer server = new HttpServer();
         System.out.println("Server is starting...");
@@ -13,6 +17,9 @@ class HttpServer
         server.start_server();
     }
 
+    /**
+     * Initialized the server.
+     */
     public void start_server() {
         sessions = new ArrayList<HttpServerSession>();
 
@@ -38,8 +45,8 @@ class HttpServerSession extends Thread
 {
     private Socket client;
     private String filename;
-    private String requestType;
     private String requestedFileName;
+    private boolean simulateSlowConnection = false;
 
     static final String DEFAULT_FILE = "index.html";
     static final String FILE_NOT_FOUND = "404.html";
@@ -49,6 +56,9 @@ class HttpServerSession extends Thread
         this.client = client;
     }
 
+    /**
+     * Run the thread.
+     */
     public void run() {
         try {
             //The reader is used to read client's GET request.
@@ -70,6 +80,13 @@ class HttpServerSession extends Thread
         }
     }
 
+    /**
+     * Handle user requested file.
+     * @param requestedFileName
+     * @param writer
+     * @param data
+     * @throws IOException
+     */
     public void handleUserRequestedFile(String requestedFileName, PrintWriter writer, BufferedOutputStream data) throws IOException {
         if(requestedFileName.equals("")) {
             requestedFileName = DEFAULT_FILE;
@@ -90,15 +107,17 @@ class HttpServerSession extends Thread
             writer.println();
             writer.flush();
 
-            while(true) {
-                try {
-                    sleep(6000);
-                    print("Sleeping");
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+            for(int i = 0; i < fileLength; i++) {
+                if(simulateSlowConnection == true) {
+                    try {
+                        sleep(1);
+                        print("Sleeping");
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
-                data.write(fileData, 0, fileLength);
-                break;
+
+                data.write(fileData[i]);
             }
             data.flush();
         }
@@ -117,11 +136,25 @@ class HttpServerSession extends Thread
             writer.println();
             writer.flush();
 
-            data.write(fileData, 0, fileLength);
+            for(int i = 0; i < fileLength; i++) {
+                try {
+                    sleep(1);
+                    print("Sleeping");
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                data.write(fileData[i]);
+            }
+
             data.flush();
         }
     }
 
+    /**
+     * Parse request file's file name.
+     * @param request
+     * @return
+     */
     public String parseRequestFileName(String request) {
         String parts[] = request.split(" ");
         if(parts.length != 3) {
@@ -133,6 +166,11 @@ class HttpServerSession extends Thread
         }
     }
 
+    /**
+     * Parse requested file content type.
+     * @param requestedFile
+     * @return
+     */
     public String parseContentType(String requestedFile) {
         if(requestedFile.endsWith(".htm") || requestedFile.endsWith(".html")) {
             return "text/html";
@@ -141,6 +179,13 @@ class HttpServerSession extends Thread
         }
     }
 
+    /**
+     * Read the file data.
+     * @param file
+     * @param fileLength
+     * @return
+     * @throws IOException
+     */
     private byte[] readFileData(File file, int fileLength) throws IOException {
         FileInputStream fileIn = null;
         byte[] fileData = new byte[fileLength];
@@ -156,6 +201,12 @@ class HttpServerSession extends Thread
         return fileData;
     }
 
+    /**
+     * Print string to browser.
+     * @param bos
+     * @param s
+     * @throws IOException
+     */
     private void println(BufferedOutputStream bos, String s) throws IOException {
         String news = s + "\r\n";
         byte[] array = news.getBytes();
@@ -165,6 +216,11 @@ class HttpServerSession extends Thread
         return;
     }
 
+    /**
+     * Helper function to print out
+     * string to console.
+     * @param text
+     */
     private void print(String text) {
         System.out.println(text);
     }
