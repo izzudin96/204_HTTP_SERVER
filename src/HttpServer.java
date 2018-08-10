@@ -137,11 +137,13 @@ class HttpServerSession extends Thread
             writer.flush();
 
             for(int i = 0; i < fileLength; i++) {
-                try {
-                    sleep(1);
-                    print("Sleeping");
-                } catch (InterruptedException ie) {
-                    ie.printStackTrace();
+                if(simulateSlowConnection) {
+                    try {
+                        sleep(1);
+                        print("Sleeping");
+                    } catch (InterruptedException ie) {
+                        ie.printStackTrace();
+                    }
                 }
                 data.write(fileData[i]);
             }
